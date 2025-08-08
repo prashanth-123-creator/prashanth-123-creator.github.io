@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Simulate Vehicle Location</title>
+  <title>Vehicle Location Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-  <h2>Simulating Live Location for KA25AB1234</h2>
-  <p id="status">Starting simulation...</p>
+  <h2>Vehicle Location Tracker</h2>
+  <p id="status">Starting tracker...</p>
 
   <script>
-    // ✅ Your Firebase Config
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyD8KbNKg69YNB2MQP63YTPQQghsNO8_RRI",
       authDomain: "location-tracker-78a61.firebaseapp.com",
@@ -21,35 +21,44 @@
       appId: "1:349242032443:web:083a3597208aa1e338771e"
     };
 
-    // ✅ Initialize Firebase
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ✅ Simulated vehicle number
+    // Vehicle number
     const vehicleNumber = "KA25AB1234";
 
-    // ✅ Starting point
-    let lat = 15.394290739064424;
-    let lng = 75.11825310871674;
+    // Update location in Firebase
+    function updateLocation(latitude, longitude) {
+      db.ref("vehicles/" + vehicleNumber).set({
+        latitude: latitude,
+        longitude: longitude,
+        timestamp: new Date().toISOString()
+      }).then(() => {
+        document.getElementById("status").innerText = `Updated location: ${latitude}, ${longitude}`;
+      }).catch((error) => {
+        console.error("Error updating location:", error);
+        document.getElementById("status").innerText = `Error updating location: ${error.message}`;
+      });
+    }
 
-    // ✅ Update every 3 seconds
-setInterval(() => {
-  // Slight movement
-  lat += (Math.random() - 0.5) * 0.001;
-  lng += (Math.random() - 0.5) * 0.001;
-
-  // Push to Firebase
-  db.ref("vehicles/" + vehicleNumber).set({
-    latitude: lat,
-    longitude: lng,
-    timestamp: new Date().toISOString()
-  }).then(() => {
-    document.getElementById("status").innerText = `Updated to: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  }).catch((error) => {
-    console.error("Error updating location:", error);
-    document.getElementById("status").innerText = `Error updating location: ${error.message}`;
-  });
-}, 3000);
+    // Get device location
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(position => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        updateLocation(latitude, longitude);
+      }, error => {
+        console.error("Error getting location:", error);
+        document.getElementById("status").innerText = `Error getting location: ${error.message}`;
+      }, {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 0
+      });
+    } else {
+      document.getElementById("status").innerText = "Geolocation not supported";
+    }
   </script>
 </body>
 </html>
