@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Vehicle Tracker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8KbNKg69YNB2MQP63YTPQQghsNO8_RRI",
+      authDomain: "location-tracker-78a61.firebaseapp.com",
+      databaseURL: "https://location-tracker-78a61-default-rtdb.firebaseio.com",
+      projectId: "location-tracker-78a61",
+      storageBucket: "location-tracker-78a61.appspot.com",
+      messagingSenderId: "349242032443",
+      appId: "1:349242032443:web:083a3597208aa1e338771e"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Initialize map
+    const map = L.map('map').setView([15.3645, 75.1234], 13);
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    // Store vehicle markers
+    const vehicleMarkers = {};
+
+    // Listen for changes in 'vehicles' node
+    db.ref('vehicles').on('value', (snapshot) => {
+      const data = snapshot.val();
+
+      for (const vehicle in data) {
+        const { latitude, longitude } = data[vehicle];
+
+        if (vehicleMarkers[vehicle]) {
+          // Update marker position
+          vehicleMarkers[vehicle].setLatLng([latitude, longitude]);
+        } else {
+          // Add new marker
+          const marker = L.marker([latitude, longitude]).addTo(map)
+            .bindPopup(`<b>Vehicle:</b> ${vehicle}`).openPopup();
+
+          vehicleMarkers[vehicle] = marker;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
