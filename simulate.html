@@ -7,10 +7,19 @@
 </head>
 <body>
   <h2>Vehicle Location Tracker</h2>
-  <p id="status">Starting tracker...</p>
+  <p id="status">Idle...</p>
+
+  <h3>Manual Location Update</h3>
+  Latitude: <input type="text" id="manualLat" value="12.9716"><br>
+  Longitude: <input type="text" id="manualLng" value="77.5946"><br>
+  <button onclick="setManualLocation()">Set Manual Location</button>
+
+  <h3>Live GPS Tracking</h3>
+  <button onclick="startLiveTracking()">Start Live Tracking</button>
+  <button onclick="stopLiveTracking()">Stop Live Tracking</button>
 
   <script>
-    // Firebase configuration
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyD8KbNKg69YNB2MQP63YTPQQghsNO8_RRI",
       authDomain: "location-tracker-78a61.firebaseapp.com",
@@ -21,43 +30,60 @@
       appId: "1:349242032443:web:083a3597208aa1e338771e"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // Vehicle number
     const vehicleNumber = "KA25AB1234";
 
-    // Update location in Firebase
+    let watchId = null;
+
     function updateLocation(latitude, longitude) {
       db.ref("vehicles/" + vehicleNumber).set({
         latitude: latitude,
         longitude: longitude,
         timestamp: new Date().toISOString()
       }).then(() => {
-        document.getElementById("status").innerText = `Updated location: ${latitude}, ${longitude}`;
+        document.getElementById("status").innerText = 
+          `Updated: ${latitude}, ${longitude}`;
       }).catch((error) => {
-        console.error("Error updating location:", error);
-        document.getElementById("status").innerText = `Error updating location: ${error.message}`;
+        document.getElementById("status").innerText = 
+          `Error: ${error.message}`;
       });
     }
 
-    // Get device location
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(position => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        updateLocation(latitude, longitude);
-      }, error => {
-        console.error("Error getting location:", error);
-        document.getElementById("status").innerText = `Error getting location: ${error.message}`;
-      }, {
-        enableHighAccuracy: true,
-        timeout: 30000,
-        maximumAge: 0
-      });
-    } else {
-      document.getElementById("status").innerText = "Geolocation not supported";
+    function setManualLocation() {
+      const lat = parseFloat(document.getElementById("manualLat").value);
+      const lng = parseFloat(document.getElementById("manualLng").value);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        updateLocation(lat, lng);
+      } else {
+        alert("Invalid coordinates");
+      }
+    }
+
+    function startLiveTracking() {
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          pos => {
+            updateLocation(pos.coords.latitude, pos.coords.longitude);
+          },
+          err => {
+            document.getElementById("status").innerText = 
+              `Error: ${err.message}`;
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+        document.getElementById("status").innerText = "Live tracking started...";
+      } else {
+        alert("Geolocation not supported in this browser.");
+      }
+    }
+
+    function stopLiveTracking() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        document.getElementById("status").innerText = "Live tracking stopped.";
+      }
     }
   </script>
 </body>
