@@ -48,21 +48,28 @@
     db.ref('vehicles/' + vehicleId).on('value', (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const { latitude, longitude, timestamp } = data;
+        const latitude = data.latitude;
+        const longitude = data.longitude;
+        const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : "Unknown";
+
+        // Popup text (safe string concatenation)
+        const popupHTML = "<b>Vehicle:</b> " + vehicleId +
+                          "<br><b>Last update:</b> " + timestamp;
 
         // First time: create marker
         if (!marker) {
           marker = L.marker([latitude, longitude]).addTo(map)
-            .bindPopup(`<b>Vehicle:</b> ${vehicleId}<br><b>Last update:</b> ${timestamp}`);
+            .bindPopup(popupHTML);
+          marker.openPopup();
           map.setView([latitude, longitude], 15);
         } else {
           // Update position + popup text
           marker.setLatLng([latitude, longitude]);
-          marker.setPopupContent(`<b>Vehicle:</b> ${vehicleId}<br><b>Last update:</b> ${timestamp}`);
+          marker.setPopupContent(popupHTML);
           map.panTo([latitude, longitude]); // smooth follow
         }
 
-        console.log(`Updated: ${latitude}, ${longitude} @ ${timestamp}`);
+        console.log("Updated:", latitude, longitude, "@", timestamp);
       } else {
         console.log("No data for vehicle:", vehicleId);
       }
