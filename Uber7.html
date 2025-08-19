@@ -4,29 +4,22 @@
   <title>Live Vehicle Tracker</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
+    #map { height: 100vh; width: 100%; }
   </style>
 </head>
 <body>
-
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
+  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-    // Your Firebase config
+    // 🔹 Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyD8KbNKg69YNB2MQP63YTPQQghsNO8_RRI",
       authDomain: "location-tracker-78a61.firebaseapp.com",
@@ -36,39 +29,42 @@
       messagingSenderId: "349242032443",
       appId: "1:349242032443:web:083a3597208aa1e338771e"
     };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Initialize map
-    const map = L.map('map').setView([15.3645, 75.1234], 13);
+    // 🔹 Vehicle ID to track
+    const vehicleId = "KA25AB1234"; // change this to your vehicle number
 
-    // Add OpenStreetMap tiles
+    // 🔹 Setup map
+    const map = L.map('map').setView([0, 0], 2); // start with world view
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19
     }).addTo(map);
 
-    // Store vehicle markers
-    const vehicleMarkers = {};
+    // 🔹 Marker variable (created once)
+    let marker = null;
 
-    // Listen for changes in 'vehicles' node
-    db.ref('vehicles').on('value', (snapshot) => {
+    // 🔹 Listen for live updates from Firebase
+    db.ref('vehicles/' + vehicleId).on('value', (snapshot) => {
       const data = snapshot.val();
+      if (data) {
+        const { latitude, longitude, timestamp } = data;
 
-      for (const vehicle in data) {
-        const { latitude, longitude } = data[vehicle];
-
-        if (vehicleMarkers[vehicle]) {
-          // Update marker position
-          vehicleMarkers[vehicle].setLatLng([latitude, longitude]);
+        // First time: create marker
+        if (!marker) {
+          marker = L.marker([latitude, longitude]).addTo(map)
+            .bindPopup(`<b>Vehicle:</b> ${vehicleId}<br><b>Last update:</b> ${timestamp}`);
+          map.setView([latitude, longitude], 15);
         } else {
-          // Add new marker
-          const marker = L.marker([latitude, longitude]).addTo(map)
-            .bindPopup(`<b>Vehicle:</b> ${vehicle}`).openPopup();
-
-          vehicleMarkers[vehicle] = marker;
+          // Update position + popup text
+          marker.setLatLng([latitude, longitude]);
+          marker.setPopupContent(`<b>Vehicle:</b> ${vehicleId}<br><b>Last update:</b> ${timestamp}`);
+          map.panTo([latitude, longitude]); // smooth follow
         }
+
+        console.log(`Updated: ${latitude}, ${longitude} @ ${timestamp}`);
+      } else {
+        console.log("No data for vehicle:", vehicleId);
       }
     });
   </script>
